@@ -138,9 +138,9 @@ async def about_callback_handler(query: types.CallbackQuery):
 async def handle_message(message: types.Message):
     await get_bot_info()
 
-    if message.chat.type == "private":
-        await ollama_request(message)
-        return
+    #if message.chat.type == "private":
+    await ollama_request(message)
+    return
 
     if await is_mentioned_in_group_or_supergroup(message):
         thread = await collect_message_thread(message)
