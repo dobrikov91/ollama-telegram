@@ -13,8 +13,8 @@ dp = Dispatcher()
 start_kb = InlineKeyboardBuilder()
 settings_kb = InlineKeyboardBuilder()
 start_kb.row(
-    types.InlineKeyboardButton(text="ℹ️ About", callback_data="about"),
-    types.InlineKeyboardButton(text="⚙️ Settings", callback_data="settings"),
+    #types.InlineKeyboardButton(text="ℹ️ About", callback_data="about"),
+    #types.InlineKeyboardButton(text="⚙️ Settings", callback_data="settings"),
 )
 settings_kb.row(
     types.InlineKeyboardButton(text="🔄 Switch LLM", callback_data="switchllm"),
@@ -23,8 +23,8 @@ settings_kb.row(
 
 commands = [
     types.BotCommand(command="start", description="Start"),
-    types.BotCommand(command="reset", description="Reset Chat"),
-    types.BotCommand(command="history", description="Look through messages"),
+    #types.BotCommand(command="reset", description="Reset Chat"),
+    #types.BotCommand(command="history", description="Look through messages"),
 ]
 ACTIVE_CHATS = {}
 ACTIVE_CHATS_LOCK = contextLock()
@@ -137,7 +137,7 @@ async def about_callback_handler(query: types.CallbackQuery):
 @perms_allowed
 async def handle_message(message: types.Message):
     await get_bot_info()
-    
+
     if message.chat.type == "private":
         await ollama_request(message)
         return
@@ -145,34 +145,34 @@ async def handle_message(message: types.Message):
     if await is_mentioned_in_group_or_supergroup(message):
         thread = await collect_message_thread(message)
         prompt = format_thread_for_prompt(thread)
-        
+
         await ollama_request(message, prompt)
 
 async def is_mentioned_in_group_or_supergroup(message: types.Message):
     if message.chat.type not in ["group", "supergroup"]:
         return False
-    
+
     is_mentioned = (
         (message.text and message.text.startswith(mention)) or
         (message.caption and message.caption.startswith(mention))
     )
-    
+
     is_reply_to_bot = (
-        message.reply_to_message and 
+        message.reply_to_message and
         message.reply_to_message.from_user.id == bot.id
     )
-    
+
     return is_mentioned or is_reply_to_bot
 
 async def collect_message_thread(message: types.Message, thread=None):
     if thread is None:
         thread = []
-    
+
     thread.insert(0, message)
-    
+
     if message.reply_to_message:
         await collect_message_thread(message.reply_to_message, thread)
-    
+
     return thread
 
 def format_thread_for_prompt(thread):
@@ -181,7 +181,7 @@ def format_thread_for_prompt(thread):
         sender = "User" if msg.from_user.id != bot.id else "Bot"
         content = msg.text or msg.caption or "[No text content]"
         prompt += f"{sender}: {content}\n\n"
-    
+
     prompt += "History:"
     return prompt
 
@@ -221,7 +221,8 @@ async def handle_response(message, response_data, full_response):
     if full_response_stripped == "":
         return
     if response_data.get("done"):
-        text = f"{full_response_stripped}\n\n⚙️ {modelname}\nGenerated in {response_data.get('total_duration') / 1e9:.2f}s."
+        #text = f"{full_response_stripped}\n\n⚙️ {modelname}\nGenerated in {response_data.get('total_duration') / 1e9:.2f}s."
+        text = full_response_stripped
         await send_response(message, text)
         async with ACTIVE_CHATS_LOCK:
             if ACTIVE_CHATS.get(message.from_user.id) is not None:
@@ -247,11 +248,14 @@ async def send_response(message, text):
 
 async def ollama_request(message: types.Message, prompt: str = None):
     try:
+        if not (message.text.startswith("абс ") or message.text.startswith("abs ")):
+            return
+
         full_response = ""
         await bot.send_chat_action(message.chat.id, "typing")
         image_base64 = await process_image(message)
         if prompt is None:
-            prompt = message.text or message.caption
+            prompt = message.text[4:] or message.caption
 
         await add_prompt_to_active_chats(message, prompt, image_base64, modelname)
         logging.info(
