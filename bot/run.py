@@ -23,7 +23,7 @@ settings_kb.row(
 
 commands = [
     types.BotCommand(command="start", description="Start"),
-    #types.BotCommand(command="reset", description="Reset Chat"),
+    types.BotCommand(command="reset", description="Reset Chat"),
     #types.BotCommand(command="history", description="Look through messages"),
 ]
 ACTIVE_CHATS = {}
