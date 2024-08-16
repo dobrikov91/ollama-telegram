@@ -23,7 +23,7 @@ settings_kb.row(
 
 commands = [
     types.BotCommand(command="start", description="Start"),
-    types.BotCommand(command="reset", description="Reset Chat"),
+    #types.BotCommand(command="reset", description="Reset Chat"),
     #types.BotCommand(command="history", description="Look through messages"),
 ]
 ACTIVE_CHATS = {}
@@ -195,6 +195,18 @@ async def process_image(message):
 
 async def add_prompt_to_active_chats(message, prompt, image_base64, modelname):
     async with ACTIVE_CHATS_LOCK:
+        ACTIVE_CHATS[message.from_user.id] = {
+                "model": modelname,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                        "images": ([image_base64] if image_base64 else []),
+                    }
+                ],
+                "stream": True,
+            }
+        return
         if ACTIVE_CHATS.get(message.from_user.id) is None:
             ACTIVE_CHATS[message.from_user.id] = {
                 "model": modelname,
@@ -215,6 +227,7 @@ async def add_prompt_to_active_chats(message, prompt, image_base64, modelname):
                     "images": ([image_base64] if image_base64 else []),
                 }
             )
+            #ACTIVE_CHATS[message.from_user.id]["messages"] = ACTIVE_CHATS[message.from_user.id]["messages"][:-1]
 
 async def handle_response(message, response_data, full_response):
     full_response_stripped = full_response.strip()
@@ -224,11 +237,11 @@ async def handle_response(message, response_data, full_response):
         #text = f"{full_response_stripped}\n\n⚙️ {modelname}\nGenerated in {response_data.get('total_duration') / 1e9:.2f}s."
         text = full_response_stripped
         await send_response(message, text)
-        async with ACTIVE_CHATS_LOCK:
-            if ACTIVE_CHATS.get(message.from_user.id) is not None:
-                ACTIVE_CHATS[message.from_user.id]["messages"].append(
-                    {"role": "assistant", "content": full_response_stripped}
-                )
+        #async with ACTIVE_CHATS_LOCK:
+        #    if ACTIVE_CHATS.get(message.from_user.id) is not None:
+        #        ACTIVE_CHATS[message.from_user.id]["messages"].append(
+        #            {"role": "assistant", "content": full_response_stripped}
+        #        )
         logging.info(
             f"[Response]: '{full_response_stripped}' for {message.from_user.first_name} {message.from_user.last_name}"
         )
@@ -248,7 +261,8 @@ async def send_response(message, text):
 
 async def ollama_request(message: types.Message, prompt: str = None):
     try:
-        if not (message.text.startswith("абс ") or message.text.startswith("abs ")):
+        name = message.text[:3].lower()
+        if name not in ['abc', 'abs', 'абс']:
             return
 
         full_response = ""
