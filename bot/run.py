@@ -52,7 +52,7 @@ async def command_start_handler(message: Message) -> None:
     )
 @dp.message(Command("reset"))
 async def command_reset_handler(message: Message) -> None:
-    if message.from_user.id in allowed_ids:
+    if message.from_user.id in allowed_ids or allow_all_users:
         if message.from_user.id in ACTIVE_CHATS:
             async with ACTIVE_CHATS_LOCK:
                 ACTIVE_CHATS.pop(message.from_user.id)
@@ -294,7 +294,7 @@ async def ollama_request(message: types.Message, prompt: str = None):
         print(f"-----\n[OllamaAPI-ERR] CAUGHT FAULT!\n{traceback.format_exc()}\n-----")
         await bot.send_message(
             chat_id=message.chat.id,
-            text=f"Something went wrong.",
+            text=f"Something went wrong. {e}",
             parse_mode=ParseMode.HTML,
         )
 

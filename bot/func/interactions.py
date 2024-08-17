@@ -15,6 +15,7 @@ admin_ids = list(map(int, os.getenv("ADMIN_IDS", "").split(",")))
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
 ollama_port = os.getenv("OLLAMA_PORT", "11434")
 log_level_str = os.getenv("LOG_LEVEL", "INFO")
+allow_all_users = bool(int(os.getenv("ALLOW_ALL_USERS", "0")))
 allow_all_users_in_groups = bool(int(os.getenv("ALLOW_ALL_USERS_IN_GROUPS", "0")))
 log_levels = list(logging._levelToName.values())
 timeout = os.getenv("TIMEOUT", "3000")
@@ -59,21 +60,17 @@ def perms_allowed(func):
     @wraps(func)
     async def wrapper(message: types.Message = None, query: types.CallbackQuery = None):
         user_id = message.from_user.id if message else query.from_user.id
-        if user_id in admin_ids or user_id in allowed_ids:
-            if message:
+        if message:
+            if message.chat.type in ["supergroup", "group"]:
+                if allow_all_users_in_groups:
+                    return await func(message)
+            if user_id in admin_ids or user_id in allowed_ids or allow_all_users:
                 return await func(message)
-            elif query:
+            await message.answer("Access Denied")
+        if query:
+            if user_id in admin_ids:
                 return await func(query=query)
-        else:
-            if message:
-                if message and message.chat.type in ["supergroup", "group"]:
-                    if allow_all_users_in_groups:
-                        return await func(message)
-                    return
-                await message.answer("Access Denied")
-            elif query:
-                if message and message.chat.type in ["supergroup", "group"]:
-                    return
+            else:
                 await query.answer("Access Denied")
 
     return wrapper
