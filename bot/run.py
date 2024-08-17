@@ -14,7 +14,7 @@ start_kb = InlineKeyboardBuilder()
 settings_kb = InlineKeyboardBuilder()
 start_kb.row(
     #types.InlineKeyboardButton(text="ℹ️ About", callback_data="about"),
-    #types.InlineKeyboardButton(text="⚙️ Settings", callback_data="settings"),
+    types.InlineKeyboardButton(text="⚙️ Settings", callback_data="settings"),
 )
 settings_kb.row(
     types.InlineKeyboardButton(text="🔄 Switch LLM", callback_data="switchllm"),
