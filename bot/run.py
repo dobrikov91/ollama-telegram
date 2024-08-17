@@ -261,6 +261,9 @@ async def send_response(message, text):
 
 async def ollama_request(message: types.Message, prompt: str = None):
     try:
+        if message.content_type != types.ContentType.TEXT:
+            return
+
         name = message.text[:3].lower()
         if name not in ['abc', 'abs', 'абс']:
             return
