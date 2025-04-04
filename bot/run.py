@@ -205,6 +205,10 @@ async def add_prompt_to_active_chats(message, prompt, image_base64, modelname):
                     }
                 ],
                 "stream": True,
+                "options": {
+                    "num_ctx": 512,
+                    "temperature": 1
+                }
             }
         return
         if ACTIVE_CHATS.get(message.from_user.id) is None:
