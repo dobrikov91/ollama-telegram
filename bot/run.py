@@ -33,6 +33,8 @@ mention = None
 CHAT_TYPE_GROUP = "group"
 CHAT_TYPE_SUPERGROUP = "supergroup"
 
+num_ctx = int(os.getenv("NUM_CTX", "2048"))
+temperature = float(os.getenv("TEMPERATURE", "0.6"))
 
 async def get_bot_info():
     global mention
@@ -206,8 +208,8 @@ async def add_prompt_to_active_chats(message, prompt, image_base64, modelname):
                 ],
                 "stream": True,
                 "options": {
-                    "num_ctx": 512,
-                    "temperature": 1
+                    "num_ctx": num_ctx,
+                    "temperature": temperature
                 }
             }
         return
