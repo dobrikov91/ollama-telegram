@@ -26,7 +26,7 @@ else:
 logging.basicConfig(level=log_level)
 async def model_list():
     async with aiohttp.ClientSession() as session:
-        url = f"http://{ollama_base_url}:{ollama_port}/api/tags"
+        url = f"http://{ollama_base_url}:{ollama_port}/v1/tags"
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
@@ -34,12 +34,17 @@ async def model_list():
             else:
                 return []
 async def generate(payload: dict, modelname: str, prompt: str):
+    print("P:", payload)
+    print("M:", modelname)
+
+
     client_timeout = ClientTimeout(total=int(timeout))
     async with aiohttp.ClientSession(timeout=client_timeout) as session:
-        url = f"http://{ollama_base_url}:{ollama_port}/api/chat"
+        url = f"http://{ollama_base_url}:{ollama_port}/v1/chat/completions"
 
         try:
             async with session.post(url, json=payload) as response:
+                print(response)
                 if response.status != 200:
                     raise aiohttp.ClientResponseError(
                         status=response.status, message=response.reason
@@ -48,11 +53,15 @@ async def generate(payload: dict, modelname: str, prompt: str):
 
                 async for chunk in response.content.iter_any():
                     buffer += chunk
+
                     while b"\n" in buffer:
                         line, buffer = buffer.split(b"\n", 1)
                         line = line.strip()
-                        if line:
-                            yield json.loads(line)
+                        print(line)
+                        if (line == b'data: [DONE]'):
+                            yield dict({'done': 1})
+                        elif line:
+                            yield json.loads(line[6:])
         except aiohttp.ClientError as e:
             print(f"Error during request: {e}")
 

@@ -8,6 +8,36 @@ import asyncio
 import traceback
 import io
 import base64
+
+# bot_names = ['abc', 'abs', 'абс']
+bot_names = ['max', 'макс']
+
+def check_name(text):
+    first_word = text.split()[0].lower()
+    print(first_word)
+
+    for name in bot_names:
+        if name in first_word:
+            return True
+
+    return False
+
+def test():
+    messages = [
+        "Abs, how are you?",
+        "ABS ANSWER",
+        "absolutely bad",
+        "Абс! ОТВЕЧАЙ",
+        "абс ты где?",
+        "блабла"
+    ]
+
+    for m in messages:
+        print(check_name(m))
+
+# test()
+# exit(0)
+
 bot = Bot(token=token)
 dp = Dispatcher()
 start_kb = InlineKeyboardBuilder()
@@ -201,6 +231,12 @@ async def add_prompt_to_active_chats(message, prompt, image_base64, modelname):
                 "model": modelname,
                 "messages": [
                     {
+                        "role": "system",
+                        "content": "Ты бот сервиса Госуслуги. К сожалению, сервис сейчас сломан." +
+                            "Отвечай на запросы как очень невежлливый сотрудник," +
+                            "используй матерный язык, ругай пользователей. Всегда отвечай на русском языке"
+                    },
+                    {
                         "role": "user",
                         "content": prompt,
                         "images": ([image_base64] if image_base64 else []),
@@ -270,9 +306,10 @@ async def ollama_request(message: types.Message, prompt: str = None):
         if message.content_type != types.ContentType.TEXT:
             return
 
-        name = message.text[:3].lower()
-        if name not in ['abc', 'abs', 'абс']:
+        if not check_name(message.text):
             return
+
+        print("Processing")
 
         full_response = ""
         await bot.send_chat_action(message.chat.id, "typing")
@@ -286,13 +323,22 @@ async def ollama_request(message: types.Message, prompt: str = None):
         )
         payload = ACTIVE_CHATS.get(message.from_user.id)
         async for response_data in generate(payload, modelname, prompt):
-            msg = response_data.get("message")
+            print(response_data)
+            if response_data.get("done"):
+                print("WE ARE OS1 DONE")
+                if await handle_response(message, response_data, full_response):
+                    break
+
+            msg = response_data.get("choices")
             if msg is None:
                 continue
-            chunk = msg.get("content", "")
+            print("MSG", msg)
+            chunk = msg[0].get("delta").get("content", "")
             full_response += chunk
+            print(full_response)
 
             if any([c in chunk for c in ".\n!?"]) or response_data.get("done"):
+                print("WE ARE OS DONE")
                 if await handle_response(message, response_data, full_response):
                     break
 
@@ -306,7 +352,7 @@ async def ollama_request(message: types.Message, prompt: str = None):
 
 
 async def main():
-    await bot.set_my_commands(commands)
+    # await bot.set_my_commands(commands)
     await dp.start_polling(bot, skip_update=True)
 
 
